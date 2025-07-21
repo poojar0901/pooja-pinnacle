@@ -1,0 +1,81 @@
+import datetime
+import time
+import threading
+import tkinter as tk
+from tkinter import filedialog, messagebox
+from playsound import playsound
+
+class AlarmClock:
+    def __init__(self, root):
+        self.root = root
+        self.root.title("Custom Alarm Clock")
+        self.alarm_time = None
+        self.tone_path = None
+        self.snooze_minutes = 5
+        self.alarm_active = False
+
+        # GUI Setup
+        tk.Label(root, text="Set Alarm (HH:MM, 24hr):").pack()
+        self.time_entry = tk.Entry(root)
+        self.time_entry.pack()
+
+        tk.Label(root, text="Snooze Duration (minutes):").pack()
+        self.snooze_entry = tk.Entry(root)
+        self.snooze_entry.insert(0, "5")
+        self.snooze_entry.pack()
+
+        self.tone_label = tk.Label(root, text="No tone selected")
+        self.tone_label.pack()
+
+        tk.Button(root, text="Choose Tone", command=self.choose_tone).pack(pady=5)
+        tk.Button(root, text="Set Alarm", command=self.set_alarm).pack(pady=5)
+
+    def choose_tone(self):
+        path = filedialog.askopenfilename(filetypes=[("Audio Files", "*.mp3 *.wav")])
+        if path:
+            self.tone_path = path
+            self.tone_label.config(text=f"Tone: {path.split('/')[-1]}")
+
+    def set_alarm(self):
+        time_str = self.time_entry.get()
+        snooze_str = self.snooze_entry.get()
+
+        try:
+            self.alarm_time = datetime.datetime.strptime(time_str, "%H:%M").time()
+            self.snooze_minutes = int(snooze_str)
+            if not self.tone_path:
+                messagebox.showerror("Error", "Please choose an alarm tone.")
+                return
+            self.alarm_active = True
+            threading.Thread(target=self.monitor_alarm, daemon=True).start()
+            messagebox.showinfo("Alarm Set", f"Alarm set for {time_str}")
+        except ValueError:
+            messagebox.showerror("Invalid Input", "Enter time in HH:MM (24hr) format.")
+
+    def monitor_alarm(self):
+        while self.alarm_active:
+            now = datetime.datetime.now().time()
+            if now.hour == self.alarm_time.hour and now.minute == self.alarm_time.minute:
+                self.trigger_alarm()
+                break
+            time.sleep(10)
+
+    def trigger_alarm(self):
+        self.play_tone()
+        if messagebox.askyesno("Snooze", f"Snooze for {self.snooze_minutes} minutes?"):
+            snooze_time = datetime.datetime.combine(datetime.date.today(), self.alarm_time) + datetime.timedelta(minutes=self.snooze_minutes)
+            self.alarm_time = snooze_time.time()
+            self.monitor_alarm()
+        else:
+            self.alarm_active = False
+
+    def play_tone(self):
+        try:
+            playsound(self.tone_path)
+        except Exception as e:
+            messagebox.showerror("Playback Error", f"Could not play sound: {e}")
+
+if __name__ == "__main__":
+    root = tk.Tk()
+    app = AlarmClock(root)
+    root.mainloop()
