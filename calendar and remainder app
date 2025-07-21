@@ -1,0 +1,104 @@
+import calendar
+import datetime
+import json
+import os
+
+REMINDER_FILE = "reminders.json"
+
+
+def load_reminders():
+    if not os.path.exists(REMINDER_FILE):
+        return {}
+    with open(REMINDER_FILE, "r") as f:
+        return json.load(f)
+
+
+def save_reminders(reminders):
+    with open(REMINDER_FILE, "w") as f:
+        json.dump(reminders, f, indent=4)
+
+
+def display_calendar(year, month):
+    print("\n" + calendar.month(year, month))
+
+
+def add_reminder(reminders):
+    date_str = input("Enter date (YYYY-MM-DD): ")
+    try:
+        datetime.datetime.strptime(date_str, "%Y-%m-%d")
+    except ValueError:
+        print("Invalid date format.")
+        return
+
+    note = input("Enter reminder: ")
+    reminders.setdefault(date_str, []).append(note)
+    save_reminders(reminders)
+    print("Reminder added.")
+
+
+def view_reminders(reminders):
+    if not reminders:
+        print("No reminders set.")
+        return
+    for date in sorted(reminders):
+        print(f"{date}:")
+        for i, note in enumerate(reminders[date], 1):
+            print(f"  {i}. {note}")
+
+
+def delete_reminder(reminders):
+    date_str = input("Enter date (YYYY-MM-DD): ")
+    if date_str not in reminders:
+        print("No reminders for that date.")
+        return
+
+    for i, note in enumerate(reminders[date_str], 1):
+        print(f"{i}. {note}")
+    try:
+        idx = int(input("Enter the number of the reminder to delete: "))
+        if 1 <= idx <= len(reminders[date_str]):
+            removed = reminders[date_str].pop(idx - 1)
+            if not reminders[date_str]:
+                del reminders[date_str]
+            save_reminders(reminders)
+            print(f"Deleted: {removed}")
+        else:
+            print("Invalid selection.")
+    except ValueError:
+        print("Invalid input.")
+
+
+def main():
+    reminders = load_reminders()
+
+    while True:
+        print("\n--- Calendar & Reminder App ---")
+        print("1. View Calendar")
+        print("2. Add Reminder")
+        print("3. View Reminders")
+        print("4. Delete Reminder")
+        print("5. Exit")
+        choice = input("Select an option: ")
+
+        if choice == "1":
+            try:
+                year = int(input("Enter year (e.g., 2025): "))
+                month = int(input("Enter month (1-12): "))
+                display_calendar(year, month)
+            except ValueError:
+                print("Invalid year or month.")
+        elif choice == "2":
+            add_reminder(reminders)
+        elif choice == "3":
+            view_reminders(reminders)
+        elif choice == "4":
+            delete_reminder(reminders)
+        elif choice == "5":
+            print("Goodbye!")
+            break
+        else:
+            print("Invalid choice.")
+
+
+if __name__ == "__main__":
+    main()
