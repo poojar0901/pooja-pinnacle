@@ -1,0 +1,33 @@
+import calendar
+import datetime
+import json
+import os
+
+REMINDER_FILE = "reminders.json"
+
+
+def load_reminders():
+    if not os.path.exists(REMINDER_FILE):
+        return {}
+    with open(REMINDER_FILE, "r") as f:
+        return json.load(f)
+
+
+def save_reminders(reminders):
+    with open(REMINDER_FILE, "w") as f:
+        json.dump(reminders, f, indent=4)
+
+
+def display_calendar(year, month):
+    print("\n" + calendar.month(year, month))
+
+
+def add_reminder(reminders):
+    date_str = input("Enter date (YYYY-MM-DD): ")
+    try:
+        datetime.datetime.strptime(date_str, "%Y-%m-%d")
+    except ValueError:
+        print("Invalid date format.")
+        return
+
+    note = input("Ent
